@@ -8,6 +8,8 @@
 
 #import "IDMPhoto.h"
 #import "IDMPhotoBrowser.h"
+#import <SDWebImage/SDWebImageDecoder.h>
+#import <SDWebImage/SDWebImageManager.h>
 
 // Private
 @interface IDMPhoto () {
@@ -135,26 +137,30 @@ caption = _caption;
             // Load async from file
             [self performSelectorInBackground:@selector(loadImageFromFileAsync) withObject:nil];
         } else if (_photoURL) {
-            // Load async from web (using AFNetworking)
-            NSURLRequest *request = [NSURLRequest requestWithURL:_photoURL];
+            // Load async from web (using SDWebImage)
+            @try {
+                SDWebImageManager *manager = [SDWebImageManager sharedManager];
+                [manager downloadWithURL:_photoURL
+                                 options:0
+                                progress:^(NSUInteger receivedSize, long long expectedSize) {
+                                    CGFloat progress = ((CGFloat)receivedSize)/((CGFloat)expectedSize);
+                                    if (self.progressUpdateBlock) {
+                                        self.progressUpdateBlock(progress);
+                                    }
+                                }
+                               completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, BOOL finished) {
+                                   if (error) {
+                                       NSLog(@"SDWebImage failed to download image: %@", error);
+                                   }
+                                   self.underlyingImage = image;
+                                   [self decompressImageAndFinishLoading];
+                               }];
+            } @catch (NSException *e) {
+                NSLog(@"Photo from web: %@", e);
+                [self decompressImageAndFinishLoading];
+            }
             
-            AFHTTPRequestOperation *op = [[AFHTTPRequestOperation alloc] initWithRequest:request];
-            op.responseSerializer = [AFImageResponseSerializer serializer];
-
-            [op setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-                UIImage *image = responseObject;
-                self.underlyingImage = image;
-                [self performSelectorOnMainThread:@selector(imageLoadingComplete) withObject:nil waitUntilDone:NO];
-            } failure:^(AFHTTPRequestOperation *operation, NSError *error) { }];
-            
-            [op setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead) {
-                CGFloat progress = ((CGFloat)totalBytesRead)/((CGFloat)totalBytesExpectedToRead);
-                if (self.progressUpdateBlock) {
-                    self.progressUpdateBlock(progress);
-                }
-            }];
-            
-            [[NSOperationQueue mainQueue] addOperation:op];
+        
         } else {
             // Failed - no source
             self.underlyingImage = nil;
@@ -279,6 +285,23 @@ caption = _caption;
             self.underlyingImage = [self decodedImageWithImage: self.underlyingImage];
             [self performSelectorOnMainThread:@selector(imageLoadingComplete) withObject:nil waitUntilDone:NO];
         }
+    }
+}
+
+- (void)decompressImageAndFinishLoading {
+    NSAssert([[NSThread currentThread] isMainThread], @"This method must be called on the main thread.");
+    if (self.underlyingImage) {
+        // Decode image async to avoid lagging when UIKit lazy loads
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            self.underlyingImage = [UIImage decodedImageWithImage:self.underlyingImage];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                // Finish on main thread
+                [self imageLoadingComplete];
+            });
+        });
+    } else {
+        // Failed
+        [self imageLoadingComplete];
     }
 }
 
