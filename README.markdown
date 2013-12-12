@@ -1,3 +1,9 @@
+## What is "new" in this fork?
+- Uses SDWebImage for image loading (bring back stuff from MWPhotoBrowser)
+- Took off dependencies from AFNetworking
+
+# Old README
+
 # IDMPhotoBrowser ![](http://cocoapod-badges.herokuapp.com/v/IDMPhotoBrowser/badge.png) ![](http://cocoapod-badges.herokuapp.com/p/IDMPhotoBrowser/badge.png)
 
 IDMPhotoBrowser is a new implementation based on [MWPhotoBrowser](https://github.com/mwaterfall/MWPhotoBrowser).
@@ -6,7 +12,6 @@ We've added both user experience and technical features inspired by Facebook's a
 
 ## New features:
 - Uses ARC
-- Uses AFNetworking for image loading
 - Image progress shown
 - Minimalistic Facebook-like interface, swipe up/down to dismiss
 - Ability to add custom actions on the action sheet
@@ -158,7 +163,7 @@ Simply add the files inside `IDMPhotoBrowser/Classes` to your Xcode project, cop
 
 ### Opensource libraries used
 
-- [AFNetWorking](https://github.com/AFNetworking/AFNetworking)
+- [SDWebImage](https://github.com/rs/SDWebImage)
 - [DACircularProgress](https://github.com/danielamitay/DACircularProgress)
 - [SVProgressHUD](https://github.com/samvermette/SVProgressHUD)
 
