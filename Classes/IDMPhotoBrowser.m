@@ -657,7 +657,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     [[UIApplication sharedApplication] setStatusBarHidden:_statusBarOriginallyHidden
                                                 withAnimation:(animated ? UIStatusBarAnimationFade : UIStatusBarAnimationNone)];
     
-    _applicationRootViewController.modalPresentationStyle = UIModalPresentationNone;
 }
 
 // Release any retained subviews of the main view.
