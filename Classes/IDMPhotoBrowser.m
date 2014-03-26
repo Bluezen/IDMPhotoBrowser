@@ -52,6 +52,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
     
     // Appearance
     UIStatusBarStyle _previousStatusBarStyle;
+    BOOL _statusBarOriginallyHidden;
     
     // Present
     UIView *_senderViewForAnimation;
@@ -175,7 +176,8 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         _applicationRootViewController = [_applicationWindow rootViewController];
         
         // if remove this: rotation works, but screw presentation/animation
-        if(kUSE_CURRENT_CONTEXT_PRESENTATION_STYLE) _applicationRootViewController.modalPresentationStyle = UIModalPresentationCurrentContext;
+        if(kUSE_CURRENT_CONTEXT_PRESENTATION_STYLE)
+            _applicationRootViewController.modalPresentationStyle = UIModalPresentationCurrentContext;
         
         self.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
         
@@ -445,7 +447,7 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         } completion:^(BOOL finished) {}];
     }*/
 
-    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationFade];
+//    [[UIApplication sharedApplication] setStatusBarHidden:NO withAnimation:UIStatusBarAnimationFade];
     
     /*if (self.wantsFullScreenLayout && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone) {
         [[UIApplication sharedApplication] setStatusBarStyle:_previousStatusBarStyle animated:YES];
@@ -467,7 +469,8 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         if ([_delegate respondsToSelector:@selector(photoBrowser:didDismissAtPageIndex:)])
             [_delegate photoBrowser:self didDismissAtPageIndex:_currentPageIndex];
         
-        _applicationRootViewController.modalPresentationStyle = 0;
+        _applicationRootViewController.modalPresentationStyle = UIModalPresentationNone;
+        
     }];
 }
 
@@ -633,6 +636,11 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
         [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackTranslucent animated:animated];
     }*/
     
+    _statusBarOriginallyHidden = [UIApplication sharedApplication].statusBarHidden;
+    [[UIApplication sharedApplication] setStatusBarHidden:YES
+                                            withAnimation:(animated ? UIStatusBarAnimationFade : UIStatusBarAnimationNone)];
+    
+    
     // Update UI
 	[self hideControlsAfterDelay];
 }
@@ -640,6 +648,16 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     _viewIsActive = YES;
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    
+    [[UIApplication sharedApplication] setStatusBarHidden:_statusBarOriginallyHidden
+                                                withAnimation:(animated ? UIStatusBarAnimationFade : UIStatusBarAnimationNone)];
+    
+    _applicationRootViewController.modalPresentationStyle = UIModalPresentationNone;
 }
 
 // Release any retained subviews of the main view.
@@ -788,21 +806,14 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
 - (BOOL)shouldAutorotate
 {
     //NSLog(@"before = %d  |  current = %d", _pageIndexBeforeRotation, _currentPageIndex);
-    
     return YES;
 }
 
 - (NSUInteger)supportedInterfaceOrientations
 {
-    //return UIInterfaceOrientationPortrait | UIInterfaceOrientationLandscapeLeft | UIInterfaceOrientationLandscapeRight;
-    return UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight;
+//    return UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight;
+    return UIInterfaceOrientationMaskAll;
 }
-
-/*- (UIInterfaceOrientation)preferredInterfaceOrientationForPresentation
-{
-    return UIInterfaceOrientationPortrait | UIInterfaceOrientationLandscapeLeft | UIInterfaceOrientationLandscapeRight;
-    //return UIInterfaceOrientationMaskPortrait | UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight;
-}*/
 
 - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 {
@@ -1204,9 +1215,6 @@ NSLocalizedStringFromTableInBundle((key), nil, [NSBundle bundleWithPath:[[NSBund
             } completion:^(BOOL finished) {}];
         }
     }*/
-    
-    [[UIApplication sharedApplication] setStatusBarHidden:hidden
-                                            withAnimation:(animated ? UIStatusBarAnimationFade : UIStatusBarAnimationNone)];
     
     // Captions
     NSMutableSet *captionViews = [[NSMutableSet alloc] initWithCapacity:_visiblePages.count];
